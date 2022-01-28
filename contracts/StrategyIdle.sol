@@ -6,9 +6,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 // These are the core Yearn libraries
-import {
-    BaseStrategyInitializable
-} from "@yearnvaults/contracts/BaseStrategy.sol";
+import { BaseStrategyInitializable } from "@yearnvaults/contracts/BaseStrategy.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -25,9 +23,9 @@ contract StrategyIdle is BaseStrategyInitializable {
     using Address for address;
     using SafeMath for uint256;
 
-    uint256 constant public MAX_GOV_TOKENS_LENGTH = 5;
+    uint256 public constant MAX_GOV_TOKENS_LENGTH = 5;
 
-    uint256 constant public FULL_ALLOC = 100000;
+    uint256 public constant FULL_ALLOC = 100000;
 
     address internal weth;
     address internal converter;
@@ -49,7 +47,10 @@ contract StrategyIdle is BaseStrategyInitializable {
     modifier updateVirtualPrice() {
         uint256 currentTokenPrice = _getTokenPrice();
         if (checkVirtualPrice) {
-            require(lastVirtualPrice <= currentTokenPrice, "Virtual price is decreasing from the last time, potential losses");
+            require(
+                lastVirtualPrice <= currentTokenPrice,
+                "Virtual price is decreasing from the last time, potential losses"
+            );
         }
         lastVirtualPrice = currentTokenPrice;
         _;
@@ -69,14 +70,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         address _referral,
         address _converter
     ) public BaseStrategyInitializable(_vault) {
-        _init(
-            _govTokens,
-            _weth,
-            _idleReservoir,
-            _idleYieldToken,
-            _referral,
-            _converter
-        );
+        _init(_govTokens, _weth, _idleReservoir, _idleYieldToken, _referral, _converter);
     }
 
     function init(
@@ -91,14 +85,7 @@ contract StrategyIdle is BaseStrategyInitializable {
     ) external {
         super._initialize(_vault, _onBehalfOf, _onBehalfOf, _onBehalfOf);
 
-        _init(
-            _govTokens,
-            _weth,
-            _idleReservoir,
-            _idleYieldToken,
-            _referral,
-            _converter
-        );
+        _init(_govTokens, _weth, _idleReservoir, _idleYieldToken, _referral, _converter);
     }
 
     function _init(
@@ -109,7 +96,10 @@ contract StrategyIdle is BaseStrategyInitializable {
         address _referral,
         address _converter
     ) internal {
-        require(address(want) == IIdleTokenV3_1(_idleYieldToken).token(), "Vault want is different from Idle token underlying");
+        require(
+            address(want) == IIdleTokenV3_1(_idleYieldToken).token(),
+            "Vault want is different from Idle token underlying"
+        );
 
         idleReservoir = _idleReservoir;
         idleYieldToken = _idleYieldToken;
@@ -159,14 +149,12 @@ contract StrategyIdle is BaseStrategyInitializable {
 
     // ******** OVERRIDE THESE METHODS FROM BASE CONTRACT ************
 
-    function name() external override view returns (string memory) {
+    function name() external view override returns (string memory) {
         return string(abi.encodePacked("StrategyIdle", IIdleTokenV3_1(idleYieldToken).symbol()));
     }
 
-    function estimatedTotalAssets() public override view returns (uint256) {
-        return want.balanceOf(address(this))
-                   .add(balanceOnIdle())
-        ;
+    function estimatedTotalAssets() public view override returns (uint256) {
+        return want.balanceOf(address(this)).add(balanceOnIdle());
     }
 
     /*
@@ -193,7 +181,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         )
     {
         // Reset, it could have been set during a withdrawal
-        if(alreadyRedeemed) {
+        if (alreadyRedeemed) {
             alreadyRedeemed = false;
         }
 
@@ -206,7 +194,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         uint256 wantBalance = balanceOfWant();
 
         // Calculate total profit w/o farming
-        if (debt < currentValue){
+        if (debt < currentValue) {
             _profit = currentValue.sub(debt);
         } else {
             _loss = debt.sub(currentValue);
@@ -254,7 +242,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         if (wantBalance < _profit) {
             _profit = wantBalance;
             _debtPayment = 0;
-        } else if (wantBalance < _debtOutstanding.add(_profit)){
+        } else if (wantBalance < _debtOutstanding.add(_profit)) {
             _debtPayment = wantBalance.sub(_profit);
         } else {
             _debtPayment = _debtOutstanding;
@@ -283,21 +271,14 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     /*
-    * Safely free an amount from Idle protocol
-    */
-    function freeAmount(uint256 _amount)
-        internal
-        updateVirtualPrice
-        returns (uint256 freedAmount)
-    {
+     * Safely free an amount from Idle protocol
+     */
+    function freeAmount(uint256 _amount) internal updateVirtualPrice returns (uint256 freedAmount) {
         uint256 valueToRedeemApprox = _amount.mul(1e18).div(lastVirtualPrice) + 1;
-        uint256 valueToRedeem = Math.min(
-            valueToRedeemApprox,
-            IERC20(idleYieldToken).balanceOf(address(this))
-        );
+        uint256 valueToRedeem = Math.min(valueToRedeemApprox, IERC20(idleYieldToken).balanceOf(address(this)));
 
         alreadyRedeemed = true;
-        
+
         uint256 preBalanceOfWant = balanceOfWant();
         IIdleTokenV3_1(idleYieldToken).redeemIdleToken(valueToRedeem);
         freedAmount = balanceOfWant().sub(preBalanceOfWant);
@@ -305,11 +286,8 @@ contract StrategyIdle is BaseStrategyInitializable {
         if (checkRedeemedAmount) {
             // Note: could be equal, prefer >= in case of rounding
             // We just need that is at least the amountToRedeem, not below
-            require(
-                freedAmount.add(redeemThreshold) >= _amount,
-                'Redeemed amount must be >= amountToRedeem');
+            require(freedAmount.add(redeemThreshold) >= _amount, "Redeemed amount must be >= amountToRedeem");
         }
-
 
         return freedAmount;
     }
@@ -373,13 +351,8 @@ contract StrategyIdle is BaseStrategyInitializable {
         _amountFreed = balanceOfWant();
     }
 
-    function protectedTokens()
-        internal
-        override
-        view
-        returns (address[] memory)
-    {
-        address[] memory protected = new address[](1+govTokens.length);
+    function protectedTokens() internal view override returns (address[] memory) {
+        address[] memory protected = new address[](1 + govTokens.length);
 
         for (uint256 i = 0; i < govTokens.length; i++) {
             protected[i] = govTokens[i];
@@ -393,16 +366,14 @@ contract StrategyIdle is BaseStrategyInitializable {
         uint256 idleTokenBalance = IERC20(idleYieldToken).balanceOf(address(this));
 
         // Always approximate by excess
-        return idleTokenBalance > 0 ?
-            idleTokenBalance.mul(_getTokenPrice()).div(1e18).add(1) : 0
-        ;
+        return idleTokenBalance > 0 ? idleTokenBalance.mul(_getTokenPrice()).div(1e18).add(1) : 0;
     }
 
     function balanceOfWant() public view returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
 
-    function ethToWant(uint256 _amount) public override view returns (uint256) {
+    function ethToWant(uint256 _amount) public view override returns (uint256) {
         if (_amount == 0) {
             return 0;
         }
@@ -410,7 +381,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         return IConverter(converter).getAmountOut(_amount, weth, address(want));
     }
 
-    function getTokenPrice() view public returns (uint256) {
+    function getTokenPrice() public view returns (uint256) {
         return _getTokenPrice();
     }
 
@@ -419,9 +390,8 @@ contract StrategyIdle is BaseStrategyInitializable {
             address govTokenAddress = govTokens[i];
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
-                uint256 convertedAmount = IConverter(converter).convert(
-                    balance, 1, govTokenAddress, address(want), address(this)
-                );
+                uint256 convertedAmount =
+                    IConverter(converter).convert(balance, 1, govTokenAddress, address(want), address(this));
 
                 // leverage uniswap returns want amount
                 liquidated = liquidated.add(convertedAmount);
@@ -430,7 +400,7 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     function _setGovTokens(address[] memory _govTokens) internal {
-        require(_govTokens.length <= MAX_GOV_TOKENS_LENGTH , 'GovTokens too long');
+        require(_govTokens.length <= MAX_GOV_TOKENS_LENGTH, "GovTokens too long");
 
         // Disallow uniswap on old tokens
         for (uint256 i = 0; i < govTokens.length; i++) {
@@ -447,7 +417,6 @@ contract StrategyIdle is BaseStrategyInitializable {
             IERC20(govTokenAddress).safeApprove(converter, type(uint256).max);
         }
     }
-
 
     function getConverter() external view returns (address) {
         return converter;
@@ -481,7 +450,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         return weth;
     }
 
-    function _getTokenPrice() view internal returns (uint256) {
+    function _getTokenPrice() internal view returns (uint256) {
         /*
          *  As per https://github.com/Idle-Labs/idle-contracts/blob/ad0f18fef670ea6a4030fe600f64ece3d3ac2202/contracts/IdleTokenGovernance.sol#L878-L900
          *
@@ -515,12 +484,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         } else {
             uint256 fee = iyt.fee();
 
-            tokenPrice = ((currentPrice.mul(FULL_ALLOC))
-                .sub(
-                    fee.mul(
-                         currentPrice.sub(userAvgPrice)
-                    )
-                )).div(FULL_ALLOC);
+            tokenPrice = ((currentPrice.mul(FULL_ALLOC)).sub(fee.mul(currentPrice.sub(userAvgPrice)))).div(FULL_ALLOC);
         }
 
         return tokenPrice;

@@ -1,0 +1,6 @@
+typechain/
+cache/
+artifacts/
+build/
+**/*.md
+typechain-types/
