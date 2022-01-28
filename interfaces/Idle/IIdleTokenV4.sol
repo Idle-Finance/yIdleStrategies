@@ -1,37 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0
+
 pragma solidity 0.6.12;
 
-interface IIdleTokenV3_1 {
-    // view
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+/// @title Interface for the Idle best-yield strategy
+/// @notice https://docs.idle.finance/best-yield-documentation/interface
+interface IIdleTokenV4 is IERC20 {
     /**
-     * IdleToken price calculation not considering fees, in underlying
+     * @return name
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @return symbol
+     */
+    function symbol() external view returns (string memory);
+
+    /**
+     * IdleToken price calculation, in underlying
      *
-     * @return price : price in underlying token
+     * @return price in underlying token
      */
     function tokenPrice() external view returns (uint256 price);
 
-    // view
     /**
-     * Map which saves avg idleToken minting price per user
-     * Used in calculating redeem price
-     *
-     * @return price : price in underlying token
+     * @notice IdleToken price for a specific user considering fees, in underlying.
+     * this is useful when you need to redeem exactly X underlying
+     * @param user address
+     * @return priceWFee : IdleToken price with fees
      */
-    function userAvgPrices(address user) external view returns (uint256 price);
-
-
-    // view
-    /**
-     * Current fee on interest gained
-     *
-     * @return fee : fee on interest gained
-     */
-    function fee() external view returns (uint256 fee);
+    function tokenPriceWithFee(address user) external view returns (uint256 priceWFee);
 
     /**
-     * @return underlying : underlying token address
+     * @notice Get average price paid for IdleTokens of a user
+     * @param user : address of user
+     * @return avgPrice : average price paid for IdleTokens
      */
-    function token() external view returns (address underlying);
+    function userAvgPrices(address user) external view returns (uint256 avgPrice);
+
+    /**
+     * @return : underlying token address
+     */
+    function token() external view returns (address);
 
     /**
      * Get APR of every ILendingProtocol
@@ -55,7 +66,11 @@ interface IIdleTokenV3_1 {
      * @param _referral : referral address
      * @return mintedTokens : amount of IdleTokens minted
      */
-    function mintIdleToken(uint256 _amount, bool _skipRebalance, address _referral) external returns (uint256 mintedTokens);
+    function mintIdleToken(
+        uint256 _amount,
+        bool _skipRebalance,
+        address _referral
+    ) external returns (uint256 mintedTokens);
 
     /**
      * Here we calc the pool share one can withdraw given the amount of IdleToken they want to burn
@@ -68,6 +83,7 @@ interface IIdleTokenV3_1 {
      * @return redeemedTokens : amount of underlying tokens redeemed
      */
     function redeemIdleToken(uint256 _amount) external returns (uint256 redeemedTokens);
+
     /**
      * Here we calc the pool share one can withdraw given the amount of IdleToken they want to burn
      * and send interest-bearing tokens (eg. cDAI/iDAI) directly to the user.
@@ -81,11 +97,4 @@ interface IIdleTokenV3_1 {
      * @return : whether has rebalanced or not
      */
     function rebalance() external returns (bool);
-
-
-    /**
-     * @dev Returns the symbol of the token, usually a shorter version of the
-     * name.
-     */
-    function symbol() external view returns (string memory);
 }

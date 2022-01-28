@@ -72,7 +72,7 @@ def idleToken(interface, token):
         "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
         "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
     }
-    yield interface.IIdleTokenV3_1(idleTokens[token.address])
+    yield interface.IIdleTokenV4(idleTokens[token.address])
 
 @pytest.fixture
 def aprDeposit(token):

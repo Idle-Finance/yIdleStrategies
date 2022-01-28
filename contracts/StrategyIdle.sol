@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "../interfaces/Idle/IIdleTokenV3_1.sol";
+import "../interfaces/Idle/IIdleTokenV4.sol";
 import "../interfaces/Idle/IdleReservoir.sol";
 
 import "../interfaces/IConverter.sol";
@@ -97,7 +97,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         address _converter
     ) internal {
         require(
-            address(want) == IIdleTokenV3_1(_idleYieldToken).token(),
+            address(want) == IIdleTokenV4(_idleYieldToken).token(),
             "Vault want is different from Idle token underlying"
         );
 
@@ -110,7 +110,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         _setGovTokens(_govTokens);
 
         checkVirtualPrice = true;
-        lastVirtualPrice = IIdleTokenV3_1(_idleYieldToken).tokenPrice();
+        lastVirtualPrice = IIdleTokenV4(_idleYieldToken).tokenPrice();
 
         alreadyRedeemed = false;
 
@@ -150,11 +150,20 @@ contract StrategyIdle is BaseStrategyInitializable {
     // ******** OVERRIDE THESE METHODS FROM BASE CONTRACT ************
 
     function name() external view override returns (string memory) {
-        return string(abi.encodePacked("StrategyIdle", IIdleTokenV3_1(idleYieldToken).symbol()));
+        return string(abi.encodePacked("StrategyIdle", IIdleTokenV4(idleYieldToken).symbol()));
     }
 
-    function estimatedTotalAssets() public view override returns (uint256) {
-        return want.balanceOf(address(this)).add(balanceOnIdle());
+    /**
+     * @return totalAssets : the value of all positions in terms of `want`
+     */
+    function estimatedTotalAssets() public view override returns (uint256 totalAssets) {
+        IIdleTokenV4 _idleToken = IIdleTokenV4(idleYieldToken);
+        uint256 idleTokenBalance = _idleToken.balanceOf(address(this));
+        totalAssets = want.balanceOf(address(this));
+
+        if (idleTokenBalance != 0) {
+            totalAssets += idleTokenBalance.mul(_idleToken.tokenPriceWithFee(address(this)));
+        }
     }
 
     /*
@@ -223,7 +232,7 @@ contract StrategyIdle is BaseStrategyInitializable {
 
         // Claim only if not done in the previous liquidate step during redeem
         if (!alreadyRedeemed) {
-            IIdleTokenV3_1(idleYieldToken).redeemIdleToken(0);
+            IIdleTokenV4(idleYieldToken).redeemIdleToken(0);
         } else {
             alreadyRedeemed = false;
         }
@@ -266,7 +275,7 @@ contract StrategyIdle is BaseStrategyInitializable {
 
         uint256 balanceOfWant = balanceOfWant();
         if (balanceOfWant > _debtOutstanding) {
-            IIdleTokenV3_1(idleYieldToken).mintIdleToken(balanceOfWant.sub(_debtOutstanding), true, referral);
+            IIdleTokenV4(idleYieldToken).mintIdleToken(balanceOfWant.sub(_debtOutstanding), true, referral);
         }
     }
 
@@ -280,7 +289,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         alreadyRedeemed = true;
 
         uint256 preBalanceOfWant = balanceOfWant();
-        IIdleTokenV3_1(idleYieldToken).redeemIdleToken(valueToRedeem);
+        IIdleTokenV4(idleYieldToken).redeemIdleToken(valueToRedeem);
         freedAmount = balanceOfWant().sub(preBalanceOfWant);
 
         if (checkRedeemedAmount) {
@@ -330,11 +339,15 @@ contract StrategyIdle is BaseStrategyInitializable {
         // NOTE: `migrate` will automatically forward all `want` in this strategy to the new one
 
         // this automatically claims the gov tokens in addition to want
-        IIdleTokenV3_1(idleYieldToken).redeemIdleToken(IERC20(idleYieldToken).balanceOf(address(this)));
+        IIdleTokenV4 _idleToken = IIdleTokenV4(idleYieldToken);
+        _idleToken.redeemIdleToken(_idleToken.balanceOf(address(this)));
 
         // Transfer gov tokens to new strategy
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            IERC20 govToken = IERC20(govTokens[i]);
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
+        IERC20 govToken;
+        for (uint256 i = 0; i < length; i++) {
+            govToken = IERC20(_govTokens[i]);
             govToken.safeTransfer(_newStrategy, govToken.balanceOf(address(this)));
         }
     }
@@ -346,7 +359,7 @@ contract StrategyIdle is BaseStrategyInitializable {
      */
 
     function liquidateAllPositions() internal override returns (uint256 _amountFreed) {
-        IIdleTokenV3_1(idleYieldToken).redeemIdleToken(IERC20(idleYieldToken).balanceOf(address(this)));
+        IIdleTokenV4(idleYieldToken).redeemIdleToken(IERC20(idleYieldToken).balanceOf(address(this)));
 
         _amountFreed = balanceOfWant();
     }
@@ -360,13 +373,6 @@ contract StrategyIdle is BaseStrategyInitializable {
         protected[govTokens.length] = idleYieldToken;
 
         return protected;
-    }
-
-    function balanceOnIdle() public view returns (uint256) {
-        uint256 idleTokenBalance = IERC20(idleYieldToken).balanceOf(address(this));
-
-        // Always approximate by excess
-        return idleTokenBalance > 0 ? idleTokenBalance.mul(_getTokenPrice()).div(1e18).add(1) : 0;
     }
 
     function balanceOfWant() public view returns (uint256) {
@@ -470,23 +476,6 @@ contract StrategyIdle is BaseStrategyInitializable {
          *  n.b: gain := idleTokenAmount * ΔP% * currentPrice
          */
 
-        IIdleTokenV3_1 iyt = IIdleTokenV3_1(idleYieldToken);
-
-        uint256 userAvgPrice = iyt.userAvgPrices(address(this));
-        uint256 currentPrice = iyt.tokenPrice();
-
-        uint256 tokenPrice;
-
-        // When no deposits userAvgPrice is 0 equiv currentPrice
-        // and in the case of issues
-        if (userAvgPrice == 0 || currentPrice < userAvgPrice) {
-            tokenPrice = currentPrice;
-        } else {
-            uint256 fee = iyt.fee();
-
-            tokenPrice = ((currentPrice.mul(FULL_ALLOC)).sub(fee.mul(currentPrice.sub(userAvgPrice)))).div(FULL_ALLOC);
-        }
-
-        return tokenPrice;
+        return IIdleTokenV4(idleYieldToken).tokenPriceWithFee(address(this));
     }
 }

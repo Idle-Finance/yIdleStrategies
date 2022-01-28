@@ -34,7 +34,7 @@ def main():
         return  # TODO: Deploy one using scripts from Vault project
 
     # Ask for IdleToken and check underlying is the same of the vault
-    idleToken = interface.IIdleTokenV3_1(get_address("Idle Token: "))
+    idleToken = interface.IIdleTokenV4(get_address("Idle Token: "))
     assert idleToken.token() == vault.token()
 
     # Production mgr
