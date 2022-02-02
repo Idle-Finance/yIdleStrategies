@@ -20,6 +20,7 @@ import "../interfaces/IConverter.sol";
 
 contract StrategyIdle is BaseStrategyInitializable {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IIdleTokenV4;
     using Address for address;
     using SafeMath for uint256;
 
@@ -197,10 +198,11 @@ contract StrategyIdle is BaseStrategyInitializable {
         // Assure IdleController has IDLE tokens during redeem
         IdleReservoir(idleReservoir).drip();
 
+        IERC20 _want = want;
         // Get debt, currentValue (want+idle), only want
         uint256 debt = vault.strategies(address(this)).totalDebt;
         uint256 currentValue = estimatedTotalAssets();
-        uint256 wantBalance = balanceOfWant();
+        uint256 wantBalance = _balanceOfWant(_want);
 
         // Calculate total profit w/o farming
         if (debt < currentValue) {
@@ -246,7 +248,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         _profit = _profit.add(liquidated);
 
         // Recalculate profit
-        wantBalance = balanceOfWant();
+        wantBalance = _balanceOfWant(_want);
 
         if (wantBalance < _profit) {
             _profit = wantBalance;
@@ -273,7 +275,7 @@ contract StrategyIdle is BaseStrategyInitializable {
             return;
         }
 
-        uint256 balanceOfWant = balanceOfWant();
+        uint256 balanceOfWant = _balanceOfWant(want);
         if (balanceOfWant > _debtOutstanding) {
             IIdleTokenV4(idleYieldToken).mintIdleToken(balanceOfWant.sub(_debtOutstanding), true, referral);
         }
@@ -283,14 +285,17 @@ contract StrategyIdle is BaseStrategyInitializable {
      * Safely free an amount from Idle protocol
      */
     function freeAmount(uint256 _amount) internal updateVirtualPrice returns (uint256 freedAmount) {
+        IIdleTokenV4 _idleYieldToken = IIdleTokenV4(idleYieldToken);
+        IERC20 _want = want;
+
         uint256 valueToRedeemApprox = _amount.mul(1e18).div(lastVirtualPrice) + 1;
-        uint256 valueToRedeem = Math.min(valueToRedeemApprox, IERC20(idleYieldToken).balanceOf(address(this)));
+        uint256 valueToRedeem = Math.min(valueToRedeemApprox, _idleYieldToken.balanceOf(address(this)));
 
         alreadyRedeemed = true;
 
-        uint256 preBalanceOfWant = balanceOfWant();
-        IIdleTokenV4(idleYieldToken).redeemIdleToken(valueToRedeem);
-        freedAmount = balanceOfWant().sub(preBalanceOfWant);
+        uint256 preBalanceOfWant = _balanceOfWant(_want);
+        _idleYieldToken.redeemIdleToken(valueToRedeem);
+        freedAmount = _balanceOfWant(_want).sub(preBalanceOfWant);
 
         if (checkRedeemedAmount) {
             // Note: could be equal, prefer >= in case of rounding
@@ -311,13 +316,14 @@ contract StrategyIdle is BaseStrategyInitializable {
         updateVirtualPrice
         returns (uint256 _liquidatedAmount, uint256 _loss)
     {
-        uint256 wantBalance = balanceOfWant();
+        IERC20 _want = want;
+        uint256 wantBalance = _balanceOfWant(_want);
 
         if (wantBalance < _amountNeeded) {
             // Note: potential drift by 1 wei, reduce to max balance in the case approx is rounded up
             uint256 amountToRedeem = _amountNeeded.sub(wantBalance);
             freeAmount(amountToRedeem);
-            wantBalance = balanceOfWant();
+            wantBalance = _balanceOfWant(_want);
         }
 
         // _liquidatedAmount min(_amountNeeded, balanceOfWant), otw vault accounting breaks
@@ -359,24 +365,31 @@ contract StrategyIdle is BaseStrategyInitializable {
      */
 
     function liquidateAllPositions() internal override returns (uint256 _amountFreed) {
-        IIdleTokenV4(idleYieldToken).redeemIdleToken(IERC20(idleYieldToken).balanceOf(address(this)));
+        IIdleTokenV4 _idleYieldToken = IIdleTokenV4(idleYieldToken);
+        _idleYieldToken.redeemIdleToken(_idleYieldToken.balanceOf(address(this)));
 
-        _amountFreed = balanceOfWant();
+        _amountFreed = _balanceOfWant(want);
     }
 
     function protectedTokens() internal view override returns (address[] memory) {
-        address[] memory protected = new address[](1 + govTokens.length);
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
+        address[] memory protected = new address[](1 + length);
 
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            protected[i] = govTokens[i];
+        for (uint256 i; i < length; i++) {
+            protected[i] = _govTokens[i];
         }
-        protected[govTokens.length] = idleYieldToken;
+        protected[_govTokens.length] = idleYieldToken;
 
         return protected;
     }
 
-    function balanceOfWant() public view returns (uint256) {
-        return IERC20(want).balanceOf(address(this));
+    function balanceOfWant() external view returns (uint256) {
+        return _balanceOfWant(want);
+    }
+
+    function _balanceOfWant(IERC20 _want) internal view returns (uint256) {
+        return _want.balanceOf(address(this));
     }
 
     function ethToWant(uint256 _amount) public view override returns (uint256) {
@@ -392,12 +405,14 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     function _liquidateGovTokens() internal returns (uint256 liquidated) {
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            address govTokenAddress = govTokens[i];
+        IConverter _converter = IConverter(converter);
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
+        for (uint256 i = 0; i < _govTokens.length; i++) {
+            address govTokenAddress = _govTokens[i];
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
-                uint256 convertedAmount =
-                    IConverter(converter).convert(balance, 1, govTokenAddress, address(want), address(this));
+                uint256 convertedAmount = _converter.convert(balance, 1, govTokenAddress, address(want), address(this));
 
                 // leverage uniswap returns want amount
                 liquidated = liquidated.add(convertedAmount);
@@ -408,19 +423,24 @@ contract StrategyIdle is BaseStrategyInitializable {
     function _setGovTokens(address[] memory _govTokens) internal {
         require(_govTokens.length <= MAX_GOV_TOKENS_LENGTH, "GovTokens too long");
 
+        address _converter = converter;
+
         // Disallow uniswap on old tokens
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            address govTokenAddress = govTokens[i];
-            IERC20(govTokenAddress).safeApprove(converter, 0);
+        address[] memory oldGovTokens = govTokens;
+        uint256 length = oldGovTokens.length;
+        for (uint256 i = 0; i < length; i++) {
+            address govTokenAddress = oldGovTokens[i];
+            IERC20(govTokenAddress).safeApprove(_converter, 0);
         }
 
         // Set new gov tokens
         govTokens = _govTokens;
 
         // Allow uniswap on new tokens
-        for (uint256 i = 0; i < _govTokens.length; i++) {
+        length = _govTokens.length;
+        for (uint256 i = 0; i < length; i++) {
             address govTokenAddress = _govTokens[i];
-            IERC20(govTokenAddress).safeApprove(converter, type(uint256).max);
+            IERC20(govTokenAddress).safeApprove(_converter, type(uint256).max);
         }
     }
 
@@ -429,10 +449,13 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     function setConverter(address _converter) external onlyGovernance {
+        address oldConverter = converter;
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
         // Disallow old converter and allow new ones
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            address govTokenAddress = govTokens[i];
-            IERC20(govTokenAddress).safeApprove(converter, 0);
+        for (uint256 i = 0; i < length; i++) {
+            address govTokenAddress = _govTokens[i];
+            IERC20(govTokenAddress).safeApprove(oldConverter, 0);
             IERC20(govTokenAddress).safeApprove(_converter, type(uint256).max);
         }
 
@@ -441,10 +464,13 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     function disableConverter() external onlyKeepers {
+        address _converter = converter;
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
         // Disallow current converter
-        for (uint256 i = 0; i < govTokens.length; i++) {
-            address govTokenAddress = govTokens[i];
-            IERC20(govTokenAddress).safeApprove(converter, 0);
+        for (uint256 i = 0; i < length; i++) {
+            address govTokenAddress = _govTokens[i];
+            IERC20(govTokenAddress).safeApprove(_converter, 0);
         }
     }
 
@@ -457,25 +483,6 @@ contract StrategyIdle is BaseStrategyInitializable {
     }
 
     function _getTokenPrice() internal view returns (uint256) {
-        /*
-         *  As per https://github.com/Idle-Labs/idle-contracts/blob/ad0f18fef670ea6a4030fe600f64ece3d3ac2202/contracts/IdleTokenGovernance.sol#L878-L900
-         *
-         *  Price on minting is currentPrice
-         *  Price on redeem must consider the fee
-         *
-         *  Below the implementation of the following redeemPrice formula
-         *
-         *  redeemPrice := underlyingAmount/idleTokenAmount
-         *
-         *  redeemPrice = currentPrice * (1 - scaledFee * ΔP%)
-         *
-         *  where:
-         *  - scaledFee   := fee/FULL_ALLOC
-         *  - ΔP% := 0 when currentPrice < userAvgPrice (no gain) and (currentPrice-userAvgPrice)/currentPrice
-         *
-         *  n.b: gain := idleTokenAmount * ΔP% * currentPrice
-         */
-
         return IIdleTokenV4(idleYieldToken).tokenPriceWithFee(address(this));
     }
 }
