@@ -1,5 +1,23 @@
 # Yearn Idle Strategies
 
+## Getting Started
+To add RPC provider:
+```bash
+brownie networks add Ethereum alchemy-mainnet  chainId=1 host=https://eth-mainnet.alchemyapi.io/v2/<ALCHEMY_API_KEY>
+```
+
+To set up mainnet forking :
+```bash
+brownie networks add development alchemy-mainnet-forking cmd=ganache-cli fork=alchemy-mainnet mnemonic=brownie port=8545 accounts=10 host=http://127.0.0.1
+```
+
+For specific options and more information about each command, type:
+`brownie networks --help`
+
+----
+
+# Old
+
 ## Registry
 
 ### Current (Prod)
@@ -15,7 +33,3 @@ USDT v0.3.2 [Etherscan](https://etherscan.io/address/0xaC05d96ba2A6252121E2a38c1
 TUSD v0.3.2 [Etherscan](https://etherscan.io/address/0x7f2CcF4e38599C4b4a1FB4aC33B32a4796aCcC03) [ape.tax](https://ape.tax/trueidle)
 
 sUSD v0.3.1 [Etherscan](https://etherscan.io/address/0xA04fE40eD8a8a8d657E41276ec9e9Ee877675e34#code) [ape.tax](https://ape.tax/susdidle)
-
-### Old
-
-To be completed

@@ -26,9 +26,11 @@ def proxyFactoryInitializable(accounts, ProxyFactoryInitializable):
         "DAI",
         "SUSD",
         "USDC",
-        "WBTC",
+        # "WBTC",
         "USDT",
         "TUSD",
+        # "RAI",
+        # "FEI"
     ]
 )
 def token(Token, request):
@@ -36,9 +38,11 @@ def token(Token, request):
         "DAI":  "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "SUSD": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+        # "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
         "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919", #0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe
+        # "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA", #0xb2d5CB72A621493fe83C6885E4A776279be595bC
     }
     yield Token.at(tokens[request.param])
 
@@ -68,9 +72,11 @@ def idleToken(interface, token):
         "0x6B175474E89094C44Da98b954EedeAC495271d0F" : "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : "0xF52CDcD458bf455aeD77751743180eC4A595Fd3F",
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : "0x5274891bEC421B39D23760c04A6755eCB444797C",
-        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151",
+        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151",
         "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
         "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
+        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919":"0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe",
+        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" :"0xb2d5CB72A621493fe83C6885E4A776279be595bC"
     }
     yield interface.IIdleTokenV4(idleTokens[token.address])
 
@@ -80,9 +86,11 @@ def aprDeposit(token):
         "0x6B175474E89094C44Da98b954EedeAC495271d0F" : 5 * 1e5,
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : 5 * 1e5,
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : 5 * 1e5,
-        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : 250,
+        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : 250,
         "0xdAC17F958D2ee523a2206206994597C13D831ec7" : 5 * 1e5,
         "0x0000000000085d4780B73119b644AE5ecd22b376" : 5 * 1e5,
+        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : 5 * 1e5,
+        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : 5 * 1e5
     }
     yield aprDeposits[token.address]
 
@@ -95,25 +103,33 @@ def tokenWhale(accounts, Contract, token):
             "quantity": 1 * 1e6,
         },
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : {
-            "whale" : "0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A", # sDAO
+            "whale" : "0x519b70055af55a007110b4ff99b0ea33071c720a", # dxDAO
             "quantity": 100_000,
         },
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : {
             "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
             "quantity": 1 * 1e6,
         },
-        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : {
-            "whale" : "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5", # maker
-            "quantity": 1 * 1000,
-        },
+        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : {
+        #     "whale" : "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5", # maker
+        #     "quantity": 1 * 1000,
+        # },
         "0xdAC17F958D2ee523a2206206994597C13D831ec7" : {
-            "whale" : "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", # bitfinex
+            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # bianane
             "quantity": 1 * 1e6,
         },
         "0x0000000000085d4780B73119b644AE5ecd22b376" : {
-            "whale" : "0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98", # bittrex
+            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
             "quantity": 1 * 1e6,
         },
+        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : {
+        #     "whale" : "0xa4b8339d2162125b33a667b0d40ac5dec27e924b", # RAI whale
+        #     "quantity": 1 * 1e6,
+        # },   
+        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : {
+        #     "whale" : "0xba12222222228d8ba445958a75a0704d566bf2c8", # binance vault
+        #     "quantity": 1 * 1e6,
+        # },   
     }
 
     user = accounts[5]

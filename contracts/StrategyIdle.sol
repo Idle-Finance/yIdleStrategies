@@ -161,9 +161,9 @@ contract StrategyIdle is BaseStrategyInitializable {
         IIdleTokenV4 _idleToken = IIdleTokenV4(idleYieldToken);
         uint256 idleTokenBalance = _idleToken.balanceOf(address(this));
         totalAssets = want.balanceOf(address(this));
-
         if (idleTokenBalance != 0) {
-            totalAssets += idleTokenBalance.mul(_idleToken.tokenPriceWithFee(address(this)));
+            uint256 balanceInIdle = idleTokenBalance.mul(_idleToken.tokenPriceWithFee(address(this))).div(1e18);
+            totalAssets = totalAssets.add(balanceInIdle).add(1);
         }
     }
 
@@ -212,9 +212,12 @@ contract StrategyIdle is BaseStrategyInitializable {
         }
 
         // To withdraw = profit from lending + _debtOutstanding
+        emit LogTest(_debtOutstanding, _profit);
         uint256 toFree = _debtOutstanding.add(_profit);
 
         // In the case want is not enough, divest from idle
+        emit LogTest(toFree, wantBalance);
+
         if (toFree > wantBalance) {
             // Divest only the missing part = toFree-wantBalance
             toFree = toFree.sub(wantBalance);
@@ -298,13 +301,15 @@ contract StrategyIdle is BaseStrategyInitializable {
         freedAmount = _balanceOfWant(_want).sub(preBalanceOfWant);
 
         if (checkRedeemedAmount) {
+            emit LogTest(_amount, 0); // 99999999999999999899689389878928423200, 0
+            emit LogTest(freedAmount, redeemThreshold); // 99999999999999999999, 1
             // Note: could be equal, prefer >= in case of rounding
             // We just need that is at least the amountToRedeem, not below
             require(freedAmount.add(redeemThreshold) >= _amount, "Redeemed amount must be >= amountToRedeem");
         }
-
-        return freedAmount;
     }
+
+    event LogTest(uint256 a, uint256 b);
 
     /*
      * Liquidate as many assets as possible to `want`, irregardless of slippage,
@@ -404,6 +409,8 @@ contract StrategyIdle is BaseStrategyInitializable {
         return _getTokenPrice();
     }
 
+    event LogSwapData(address assetIn, address aseetOut, uint256 amountIn);
+
     function _liquidateGovTokens() internal returns (uint256 liquidated) {
         IConverter _converter = IConverter(converter);
         address[] memory _govTokens = govTokens;
@@ -412,6 +419,7 @@ contract StrategyIdle is BaseStrategyInitializable {
             address govTokenAddress = _govTokens[i];
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
+                emit LogSwapData(govTokenAddress, address(want), balance);
                 uint256 convertedAmount = _converter.convert(balance, 1, govTokenAddress, address(want), address(this));
 
                 // leverage uniswap returns want amount
