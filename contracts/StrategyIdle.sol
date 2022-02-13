@@ -301,15 +301,11 @@ contract StrategyIdle is BaseStrategyInitializable {
         freedAmount = _balanceOfWant(_want).sub(preBalanceOfWant);
 
         if (checkRedeemedAmount) {
-            emit LogTest(_amount, 0); // 99999999999999999899689389878928423200, 0
-            emit LogTest(freedAmount, redeemThreshold); // 99999999999999999999, 1
             // Note: could be equal, prefer >= in case of rounding
             // We just need that is at least the amountToRedeem, not below
             require(freedAmount.add(redeemThreshold) >= _amount, "Redeemed amount must be >= amountToRedeem");
         }
     }
-
-    event LogTest(uint256 a, uint256 b);
 
     /*
      * Liquidate as many assets as possible to `want`, irregardless of slippage,
@@ -420,7 +416,7 @@ contract StrategyIdle is BaseStrategyInitializable {
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
                 emit LogSwapData(govTokenAddress, address(want), balance);
-                uint256 convertedAmount = _converter.convert(balance, 1, govTokenAddress, address(want), address(this));
+                uint256 convertedAmount = _converter.convert(balance, 0, govTokenAddress, address(want), address(this));
 
                 // leverage uniswap returns want amount
                 liquidated = liquidated.add(convertedAmount);

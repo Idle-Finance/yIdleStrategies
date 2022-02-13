@@ -17,8 +17,11 @@ def test_converter_balancer_weth(converter, accounts, idle, weth):
     balancePre = weth.balanceOf(user)
     tx = converter.convert(amount, 1, idle, weth, user, {'from': user})
 
-    assert tx.events['LOG_SWAP']['tokenAmountIn'] == 100 * (10 ** 18)
-    assert tx.events['LOG_SWAP']['tokenAmountOut'] == (weth.balanceOf(user)-balancePre)
+    # Brownie issue : https://github.com/eth-brownie/brownie/issues/783
+    # Event Swap would become `unknown`
+    # assert tx.events['Swap']['amount0In'] == 100 * (10 ** 18)
+    # assert tx.events['Swap']['amount1Out'] == (weth.balanceOf(user)-balancePre)
+    assert weth.balanceOf(user)-balancePre > 0
 
     assert weth.balanceOf(converter) == 0
     assert idle.balanceOf(converter) == 0
@@ -32,12 +35,7 @@ def test_converter_balancer_weth(converter, accounts, idle, weth):
     balancePre = weth.balanceOf(user)
     tx = converter.convert(amount, 1, idle, weth, user, {'from': user})
 
-    assert tx.events.count('LOG_SWAP') == 0
-
-    # Brownie issue : https://github.com/eth-brownie/brownie
-    # Event Swap would become `unknown`
-    # assert tx.events['Swap']['amount0In'] == 5000000000000000
-    # assert tx.events['Swap']['amount1Out'] == (weth.balanceOf(user)-balancePre)
+    assert tx.events.count('Swap') == 0
 
     assert weth.balanceOf(converter) == 0
     assert idle.balanceOf(converter) == 0
@@ -49,6 +47,7 @@ def test_converter_balancer_token(Contract, converter, accounts, idle, weth):
     user = accounts[0]
     idleWhale = accounts.at('0x107A369bc066c77FF061c7d2420618a6ce31B925', True)
 
+    # When amountIn is greater than a threshold defined in the Convert contract
     amount = '100 ether'
     idle.transfer(user, amount, {'from': idleWhale})
 
@@ -57,17 +56,17 @@ def test_converter_balancer_token(Contract, converter, accounts, idle, weth):
     balancePre = dai.balanceOf(user)
     tx = converter.convert(amount, 1, idle, dai, user, {'from': user})
 
-    # Brownie issue : https://github.com/eth-brownie/brownie
+    assert dai.balanceOf(user)-balancePre > 0
+    # Brownie issue : https://github.com/eth-brownie/brownie/issues/783
     # Event Swap would become `unknown`
-    assert tx.events['LOG_SWAP']['tokenAmountIn'] == 100 * (10 ** 18)
-    # assert tx.events['LOG_SWAP']['tokenAmountOut'] == tx.events['Swap']['amount1In']
-    # assert tx.events['LOG_SWAP']['tokenAmountOut'] == tx.events['Swap']['amount1In']
+    # assert tx.events['Swap']['amount1In'] == 100 * (10 ** 18)
     # assert tx.events['Swap']['amount0Out'] == (dai.balanceOf(user)-balancePre)
 
     assert weth.balanceOf(converter) == 0
     assert idle.balanceOf(converter) == 0
     assert dai.balanceOf(converter) == 0
 
+    # When amountIn is smaller than a threshold defined in the Convert contract
     amount = '0.005 ether'
     idle.transfer(user, amount, {'from': idleWhale})
 
@@ -76,10 +75,7 @@ def test_converter_balancer_token(Contract, converter, accounts, idle, weth):
     balancePre = dai.balanceOf(user)
     tx = converter.convert(amount, 1, idle, dai, user, {'from': user})
 
-    assert tx.events.count('LOG_SWAP') == 0
-
-    # assert tx.events['Swap'][0]['amount0In'] == 5000000000000000
-    # assert tx.events['Swap'][1]['amount0Out'] == (dai.balanceOf(user)-balancePre)
+    assert tx.events.count('Swap') == 0
 
     assert weth.balanceOf(converter) == 0
     assert idle.balanceOf(converter) == 0
@@ -88,21 +84,15 @@ def test_converter_balancer_token(Contract, converter, accounts, idle, weth):
 def test_converter_setters(Contract, converter, accounts, idle):
     owner = accounts.at(converter.owner(), True)
 
-    converter.setUniswap(idle, {'from': owner})
-    assert converter.getUniswap() == idle.address
+    converter.setSushiswap(idle, {'from': owner})
+    assert converter.sushiswap() == idle.address
 
     with brownie.reverts("Ownable: caller is not the owner"):
-        converter.setUniswap(idle, {'from': accounts[0]})
-
-    converter.setBPool(idle, {'from': owner})
-    assert converter.getBPool() == idle.address
-
-    with brownie.reverts("Ownable: caller is not the owner"):
-        converter.setBPool(idle, {'from': accounts[0]})
+        converter.setSushiswap(idle, {'from': accounts[0]})
 
     minAmountIn = 12345
     converter.setMinAmountIn(minAmountIn, {'from': owner})
-    assert converter.getMinAmountIn() == minAmountIn
+    assert converter.minAmountIn() == minAmountIn
 
     with brownie.reverts("Ownable: caller is not the owner"):
         converter.setMinAmountIn(minAmountIn, {'from': accounts[0]})

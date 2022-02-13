@@ -26,23 +26,23 @@ def proxyFactoryInitializable(accounts, ProxyFactoryInitializable):
         "DAI",
         "SUSD",
         "USDC",
-        # "WBTC",
-        "USDT",
-        "TUSD",
+        "WBTC",
+        # "USDT",
+        # "TUSD",
         # "RAI",
         # "FEI"
     ]
 )
 def token(Token, request):
     tokens = {
-        "DAI":  "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "DAI":  "0x6B175474E8 9094C44Da98b954EedeAC495271d0F",
         "SUSD": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        # "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-        "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
-        # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919", #0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe
-        # "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA", #0xb2d5CB72A621493fe83C6885E4A776279be595bC
+        "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+        # "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        # "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919",
+        # "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
     }
     yield Token.at(tokens[request.param])
 
@@ -55,16 +55,12 @@ def idle(Token):
     yield Token.at("0x875773784Af8135eA0ef43b5a374AaD105c5D39e")
 
 @pytest.fixture
-def uniswap(Contract):
-    yield Contract("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+def sushiswap(Contract):
+    yield Contract("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F")
 
 @pytest.fixture
 def weth(Contract):
     yield Contract("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
-
-@pytest.fixture
-def bpool(Contract):
-    yield Contract("0xCaf467DFE064a1F54e4ece8515Ddf326B9bE801E")
 
 @pytest.fixture
 def idleToken(interface, token):
@@ -72,9 +68,9 @@ def idleToken(interface, token):
         "0x6B175474E89094C44Da98b954EedeAC495271d0F" : "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : "0xF52CDcD458bf455aeD77751743180eC4A595Fd3F",
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : "0x5274891bEC421B39D23760c04A6755eCB444797C",
-        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151",
-        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
-        "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
+        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151",
+        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
+        # "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
         # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919":"0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe",
         # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" :"0xb2d5CB72A621493fe83C6885E4A776279be595bC"
     }
@@ -86,9 +82,9 @@ def aprDeposit(token):
         "0x6B175474E89094C44Da98b954EedeAC495271d0F" : 5 * 1e5,
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : 5 * 1e5,
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : 5 * 1e5,
-        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : 250,
-        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : 5 * 1e5,
-        "0x0000000000085d4780B73119b644AE5ecd22b376" : 5 * 1e5,
+        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : 250,
+        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : 5 * 1e5,
+        # "0x0000000000085d4780B73119b644AE5ecd22b376" : 5 * 1e5,
         # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : 5 * 1e5,
         # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : 5 * 1e5
     }
@@ -110,18 +106,18 @@ def tokenWhale(accounts, Contract, token):
             "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
             "quantity": 1 * 1e6,
         },
-        # "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : {
-        #     "whale" : "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5", # maker
-        #     "quantity": 1 * 1000,
+        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : {
+            "whale" : "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5", # maker
+            "quantity": 1 * 1000,
+        },
+        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : {
+        #     "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # bianane
+        #     "quantity": 1 * 1e6,
         # },
-        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : {
-            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # bianane
-            "quantity": 1 * 1e6,
-        },
-        "0x0000000000085d4780B73119b644AE5ecd22b376" : {
-            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
-            "quantity": 1 * 1e6,
-        },
+        # "0x0000000000085d4780B73119b644AE5ecd22b376" : {
+        #     "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
+        #     "quantity": 1 * 1e6,
+        # },
         # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : {
         #     "whale" : "0xa4b8339d2162125b33a667b0d40ac5dec27e924b", # RAI whale
         #     "quantity": 1 * 1e6,
@@ -160,11 +156,10 @@ def keeper(accounts):
     yield accounts[4]
 
 @pytest.fixture
-def converter(strategist, Converter, uniswap, weth, bpool, idle):
+def converter(strategist, Converter, sushiswap, weth, idle):
     yield Converter.deploy(
-        uniswap,
+        sushiswap,
         weth,
-        bpool,
         idle,
         "0.01 ether",
         {"from": strategist}
