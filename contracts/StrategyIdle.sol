@@ -212,11 +212,9 @@ contract StrategyIdle is BaseStrategyInitializable {
         }
 
         // To withdraw = profit from lending + _debtOutstanding
-        emit LogTest(_debtOutstanding, _profit);
         uint256 toFree = _debtOutstanding.add(_profit);
 
         // In the case want is not enough, divest from idle
-        emit LogTest(toFree, wantBalance);
 
         if (toFree > wantBalance) {
             // Divest only the missing part = toFree-wantBalance
@@ -405,8 +403,6 @@ contract StrategyIdle is BaseStrategyInitializable {
         return _getTokenPrice();
     }
 
-    event LogSwapData(address assetIn, address aseetOut, uint256 amountIn);
-
     function _liquidateGovTokens() internal returns (uint256 liquidated) {
         IConverter _converter = IConverter(converter);
         address[] memory _govTokens = govTokens;
@@ -415,7 +411,6 @@ contract StrategyIdle is BaseStrategyInitializable {
             address govTokenAddress = _govTokens[i];
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
-                emit LogSwapData(govTokenAddress, address(want), balance);
                 uint256 convertedAmount = _converter.convert(balance, 0, govTokenAddress, address(want), address(this));
 
                 // leverage uniswap returns want amount

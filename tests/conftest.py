@@ -27,22 +27,22 @@ def proxyFactoryInitializable(accounts, ProxyFactoryInitializable):
         "SUSD",
         "USDC",
         "WBTC",
-        # "USDT",
-        # "TUSD",
-        # "RAI",
-        # "FEI"
+        "USDT",
+        "TUSD",
+        "FEI",
+        # "RAI"
     ]
 )
 def token(Token, request):
     tokens = {
-        "DAI":  "0x6B175474E8 9094C44Da98b954EedeAC495271d0F",
+        "DAI":  "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "SUSD": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-        # "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        # "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
-        # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919",
-        # "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
+        "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
+        # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919"
     }
     yield Token.at(tokens[request.param])
 
@@ -69,10 +69,10 @@ def idleToken(interface, token):
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : "0xF52CDcD458bf455aeD77751743180eC4A595Fd3F",
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : "0x5274891bEC421B39D23760c04A6755eCB444797C",
         "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151",
-        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
-        # "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
-        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919":"0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe",
-        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" :"0xb2d5CB72A621493fe83C6885E4A776279be595bC"
+        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
+        "0x0000000000085d4780B73119b644AE5ecd22b376" : "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c",
+        "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : "0xb2d5CB72A621493fe83C6885E4A776279be595bC",
+        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : "0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe"
     }
     yield interface.IIdleTokenV4(idleTokens[token.address])
 
@@ -83,10 +83,10 @@ def aprDeposit(token):
         "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51" : 5 * 1e5,
         "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : 5 * 1e5,
         "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : 250,
-        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : 5 * 1e5,
-        # "0x0000000000085d4780B73119b644AE5ecd22b376" : 5 * 1e5,
-        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : 5 * 1e5,
-        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : 5 * 1e5
+        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : 5 * 1e5,
+        "0x0000000000085d4780B73119b644AE5ecd22b376" : 5 * 1e5,
+        "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : 5 * 1e5,
+        # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : 5 * 1e5
     }
     yield aprDeposits[token.address]
 
@@ -110,20 +110,20 @@ def tokenWhale(accounts, Contract, token):
             "whale" : "0xBF72Da2Bd84c5170618Fbe5914B0ECA9638d5eb5", # maker
             "quantity": 1 * 1000,
         },
-        # "0xdAC17F958D2ee523a2206206994597C13D831ec7" : {
-        #     "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # bianane
-        #     "quantity": 1 * 1e6,
-        # },
-        # "0x0000000000085d4780B73119b644AE5ecd22b376" : {
-        #     "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
-        #     "quantity": 1 * 1e6,
-        # },
+        "0xdAC17F958D2ee523a2206206994597C13D831ec7" : {
+            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # bianane
+            "quantity": 1 * 1e6,
+        },
+        "0x0000000000085d4780B73119b644AE5ecd22b376" : {
+            "whale" : "0xf977814e90da44bfa03b6295a0616a897441acec", # binance
+            "quantity": 1 * 1e6,
+        },
+        "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : {
+            "whale" : "0xba12222222228d8ba445958a75a0704d566bf2c8", # binance vault
+            "quantity": 1 * 1e6,
+        },   
         # "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919" : {
-        #     "whale" : "0xa4b8339d2162125b33a667b0d40ac5dec27e924b", # RAI whale
-        #     "quantity": 1 * 1e6,
-        # },   
-        # "0x956F47F50A910163D8BF957Cf5846D573E7f87CA" : {
-        #     "whale" : "0xba12222222228d8ba445958a75a0704d566bf2c8", # binance vault
+        #     "whale" : "0x752f119bd4ee2342ce35e2351648d21962c7cafe", # RAI whale
         #     "quantity": 1 * 1e6,
         # },   
     }
@@ -137,7 +137,7 @@ def tokenWhale(accounts, Contract, token):
 
     yield user
 
-@pytest.fixture
+@pytest.fixture 
 def vault(pm, gov, rewards, guardian, token):
     Vault = pm(config["dependencies"][0]).Vault
     vault = guardian.deploy(Vault)

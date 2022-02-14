@@ -41,9 +41,6 @@ contract Converter is IConverter, Ownable {
         minAmountIn = _minAmountIn;
     }
 
-    event LogInfo(address assetIn, address assetOut, uint256 amount, uint256 amountMin);
-    event LogPath(address[] path);
-
     function convert(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -71,8 +68,6 @@ contract Converter is IConverter, Ownable {
             convertedAmount = amounts[amounts.length - 1];
         }
     }
-
-    event LogAmount(uint256 amount1, uint256 amount2);
 
     function _ensureAllowance(
         address token,
