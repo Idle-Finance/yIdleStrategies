@@ -24,9 +24,9 @@ contract StrategyIdle is BaseStrategyInitializable {
     using Address for address;
     using SafeMath for uint256;
 
-    uint256 public constant MAX_GOV_TOKENS_LENGTH = 5;
+    uint256 private constant MAX_GOV_TOKENS_LENGTH = 5;
 
-    uint256 public constant FULL_ALLOC = 100000;
+    uint256 private constant FULL_ALLOC = 100_000;
 
     address internal weth;
     address internal converter;
@@ -44,6 +44,12 @@ contract StrategyIdle is BaseStrategyInitializable {
     address[] internal govTokens;
 
     uint256 public redeemThreshold;
+
+    mapping(address => uint256) minAmountOuts;
+
+    event UpdateGovTokens(address[] _govTokens);
+    event UpdateConverter(address _converter);
+    event DisableConverter(address _converter);
 
     modifier updateVirtualPrice() {
         uint256 currentTokenPrice = _getTokenPrice();
@@ -111,7 +117,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         _setGovTokens(_govTokens);
 
         checkVirtualPrice = true;
-        lastVirtualPrice = IIdleTokenV4(_idleYieldToken).tokenPrice();
+        lastVirtualPrice = IIdleTokenV4(_idleYieldToken).tokenPriceWithFee(address(this));
 
         alreadyRedeemed = false;
 
@@ -146,6 +152,49 @@ contract StrategyIdle is BaseStrategyInitializable {
 
     function setRedeemThreshold(uint256 _redeemThreshold) external onlyGovernanceOrManagement {
         redeemThreshold = _redeemThreshold;
+    }
+
+    function setMinAmountOuts(address[] calldata _tokens, uint256[] calldata _minAmountOuts)
+        external
+        onlyGovernanceOrManagement
+    {
+        uint256 length = _tokens.length;
+        require(length == _minAmountOuts.length, "not-same-length");
+
+        for (uint256 i; i < length; i++) {
+            minAmountOuts[_tokens[i]] = _minAmountOuts[i];
+        }
+    }
+
+    function setConverter(address _converter) external onlyGovernance {
+        address oldConverter = converter;
+
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
+
+        // Disallow old converter and allow new ones
+        for (uint256 i; i < length; i++) {
+            IERC20 govToken = IERC20(_govTokens[i]);
+            govToken.safeApprove(oldConverter, 0);
+            govToken.safeApprove(_converter, type(uint256).max);
+        }
+
+        // Set new converter
+        converter = _converter;
+
+        emit UpdateConverter(_converter);
+    }
+
+    function disableConverter() external onlyKeepers {
+        address _converter = converter;
+        address[] memory _govTokens = govTokens;
+        uint256 length = _govTokens.length;
+        // Disallow current converter
+        for (uint256 i; i < length; i++) {
+            IERC20(_govTokens[i]).safeApprove(_converter, 0);
+        }
+
+        emit DisableConverter(_converter);
     }
 
     // ******** OVERRIDE THESE METHODS FROM BASE CONTRACT ************
@@ -289,7 +338,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         IIdleTokenV4 _idleYieldToken = IIdleTokenV4(idleYieldToken);
         IERC20 _want = want;
 
-        uint256 valueToRedeemApprox = _amount.mul(1e18).div(lastVirtualPrice) + 1;
+        uint256 valueToRedeemApprox = _amount.mul(1e18).div(lastVirtualPrice).add(1);
         uint256 valueToRedeem = Math.min(valueToRedeemApprox, _idleYieldToken.balanceOf(address(this)));
 
         alreadyRedeemed = true;
@@ -405,13 +454,22 @@ contract StrategyIdle is BaseStrategyInitializable {
 
     function _liquidateGovTokens() internal returns (uint256 liquidated) {
         IConverter _converter = IConverter(converter);
+        address _wantAddress = address(want);
+
         address[] memory _govTokens = govTokens;
         uint256 length = _govTokens.length;
-        for (uint256 i = 0; i < _govTokens.length; i++) {
+
+        for (uint256 i; i < _govTokens.length; i++) {
             address govTokenAddress = _govTokens[i];
             uint256 balance = IERC20(govTokenAddress).balanceOf(address(this));
             if (balance > 0) {
-                uint256 convertedAmount = _converter.convert(balance, 0, govTokenAddress, address(want), address(this));
+                uint256 convertedAmount = _converter.convert(
+                    balance,
+                    minAmountOuts[govTokenAddress],
+                    govTokenAddress,
+                    _wantAddress,
+                    address(this)
+                );
 
                 // leverage uniswap returns want amount
                 liquidated = liquidated.add(convertedAmount);
@@ -427,7 +485,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         // Disallow uniswap on old tokens
         address[] memory oldGovTokens = govTokens;
         uint256 length = oldGovTokens.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; i++) {
             address govTokenAddress = oldGovTokens[i];
             IERC20(govTokenAddress).safeApprove(_converter, 0);
         }
@@ -437,40 +495,16 @@ contract StrategyIdle is BaseStrategyInitializable {
 
         // Allow uniswap on new tokens
         length = _govTokens.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; i++) {
             address govTokenAddress = _govTokens[i];
             IERC20(govTokenAddress).safeApprove(_converter, type(uint256).max);
         }
+
+        emit UpdateGovTokens(_govTokens);
     }
 
     function getConverter() external view returns (address) {
         return converter;
-    }
-
-    function setConverter(address _converter) external onlyGovernance {
-        address oldConverter = converter;
-        address[] memory _govTokens = govTokens;
-        uint256 length = _govTokens.length;
-        // Disallow old converter and allow new ones
-        for (uint256 i = 0; i < length; i++) {
-            address govTokenAddress = _govTokens[i];
-            IERC20(govTokenAddress).safeApprove(oldConverter, 0);
-            IERC20(govTokenAddress).safeApprove(_converter, type(uint256).max);
-        }
-
-        // Set new converter
-        converter = _converter;
-    }
-
-    function disableConverter() external onlyKeepers {
-        address _converter = converter;
-        address[] memory _govTokens = govTokens;
-        uint256 length = _govTokens.length;
-        // Disallow current converter
-        for (uint256 i = 0; i < length; i++) {
-            address govTokenAddress = _govTokens[i];
-            IERC20(govTokenAddress).safeApprove(_converter, 0);
-        }
     }
 
     function getGovTokens() external view returns (address[] memory) {
