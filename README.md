@@ -21,6 +21,9 @@ brownie networks add development alchemy-mainnet-forking cmd=ganache-cli fork=al
 For specific options and more information about each command, type:
 `brownie networks --help`
 
+## Supported Assets
+Idle Best Yield: DAI, SUSD, USDC, WBTC, USDT, TUSD, FEI
+
 ----
 
 # Old

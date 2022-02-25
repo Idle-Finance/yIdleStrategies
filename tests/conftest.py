@@ -35,13 +35,13 @@ def proxyFactoryInitializable(accounts, ProxyFactoryInitializable):
 )
 def token(Token, request):
     tokens = {
-        "DAI":  "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "DAI": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "SUSD": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
         "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
         "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "TUSD": "0x0000000000085d4780B73119b644AE5ecd22b376",
-        "FEI":"0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
+        "FEI": "0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
         # "RAI":"0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919"
     }
     yield Token.at(tokens[request.param])

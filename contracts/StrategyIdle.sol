@@ -154,10 +154,7 @@ contract StrategyIdle is BaseStrategyInitializable {
         redeemThreshold = _redeemThreshold;
     }
 
-    function setMinAmountOuts(address[] calldata _tokens, uint256[] calldata _minAmountOuts)
-        external
-        onlyGovernanceOrManagement
-    {
+    function setMinAmountOuts(address[] calldata _tokens, uint256[] calldata _minAmountOuts) external onlyKeepers {
         uint256 length = _tokens.length;
         require(length == _minAmountOuts.length, "not-same-length");
 
